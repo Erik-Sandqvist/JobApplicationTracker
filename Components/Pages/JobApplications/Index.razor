@@ -1,0 +1,149 @@
+﻿@page "/jobapplications"
+@using Microsoft.EntityFrameworkCore
+@using JobApplicationTrackerV2.Data
+@using JobApplicationTrackerV2.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using JobApplicationTrackerV2.Components.Shared
+@inject ApplicationDbContext DbContext
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@attribute [Authorize]
+
+<MudText Typo="Typo.h3" Class="mb-4">Mina Jobbansökningar</MudText>
+
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           StartIcon="@Icons.Material.Filled.Add"
+           Href="/jobapplications/create"
+           Class="mb-4">
+    Lägg till ny ansökan
+</MudButton>
+
+@if (applications == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else if (!applications.Any())
+{
+    <MudAlert Severity="Severity.Info">
+        Du har inga jobbansökningar än. Klicka på "Lägg till ny ansökan" för att komma igång!
+    </MudAlert>
+}
+else
+{
+    <MudTable Items="@applications" Hover="true" Striped="true" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>Företag</MudTh>
+            <MudTh>Jobbtitel</MudTh>
+            <MudTh>Plats</MudTh>
+            <MudTh>Datum</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Åtgärder</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Företag"><strong>@context.Foretag</strong></MudTd>
+            <MudTd DataLabel="Jobbtitel">@context.Jobbtitel</MudTd>
+            <MudTd DataLabel="Plats">@context.Plats</MudTd>
+            <MudTd DataLabel="Datum">@context.AnsokanDatum.ToShortDateString()</MudTd>
+            <MudTd DataLabel="Status">
+                @switch (context.Status)
+                {
+                    case ApplicationStatus.VantarPaSvar:
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small">Väntar på svar</MudChip>
+                        break;
+                    case ApplicationStatus.Ja:
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Ja</MudChip>
+                        break;
+                    case ApplicationStatus.Nej:
+                        <MudChip T="string" Color="Color.Error" Size="Size.Small">Nej</MudChip>
+                        break;
+                    case ApplicationStatus.GattVideare:
+                        <MudChip T="string" Color="Color.Info" Size="Size.Small">Gått vidare</MudChip>
+                        break;
+                    case ApplicationStatus.Intervju:
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small">Intervju</MudChip>
+                        break;
+                    case ApplicationStatus.Avbruten:
+                        <MudChip T="string" Color="Color.Default" Size="Size.Small">Avbruten</MudChip>
+                        break;
+                }
+            </MudTd>
+            <MudTd DataLabel="Åtgärder">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Href="@($"/jobapplications/edit/{context.Id}")"
+                               Title="Redigera" />
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                               Color="Color.Info"
+                               Size="Size.Small"
+                               Href="@($"/jobapplications/details/{context.Id}")"
+                               Title="Visa detaljer" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               OnClick="@(() => DeleteApplication(context.Id))"
+                               Title="Ta bort" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <MudText Typo="Typo.body2" Class="mt-4">
+        Totalt antal ansökningar: <strong>@applications.Count</strong>
+    </MudText>
+}
+
+@code {
+    private List<JobApplication>? applications;
+    private string? userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            userId = appUser?.Id;
+
+            if (userId != null)
+            {
+                applications = await DbContext.JobApplications
+                    .Where(j => j.UserId == userId)
+                    .OrderByDescending(j => j.AnsokanDatum)
+                    .ToListAsync();
+            }
+        }
+    }
+
+    private async Task DeleteApplication(int id)
+    {
+        var parameters = new DialogParameters
+            {
+                ["ContentText"] = "Är du säker på att du vill ta bort denna ansökan?",
+                ["ButtonText"] = "Ta bort",
+                ["Color"] = Color.Error
+            };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Bekräfta borttagning", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var application = await DbContext.JobApplications.FindAsync(id);
+            if (application != null && application.UserId == userId)
+            {
+                DbContext.JobApplications.Remove(application);
+                await DbContext.SaveChangesAsync();
+                applications = await DbContext.JobApplications
+                    .Where(j => j.UserId == userId)
+                    .OrderByDescending(j => j.AnsokanDatum)
+                    .ToListAsync();
+            }
+        }
+    }
+}

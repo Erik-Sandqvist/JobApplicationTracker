@@ -1,0 +1,12 @@
+﻿@if (!string.IsNullOrEmpty(Message))
+{
+    var statusMessageClass = Message.StartsWith("Error") ? "danger" : "success";
+    <MudAlert Severity="@(statusMessageClass == "danger" ? Severity.Error : Severity.Success)" Class="mb-3">
+        @Message
+    </MudAlert>
+}
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+}

@@ -1,0 +1,134 @@
+﻿@page "/jobapplications/create"
+@using Microsoft.EntityFrameworkCore
+@using JobApplicationTrackerV2.Data
+@using JobApplicationTrackerV2.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@inject ApplicationDbContext DbContext
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<MudText Typo="Typo.h3" Class="mb-4">Lägg till ny jobbansökan</MudText>
+
+<MudPaper Class="pa-4">
+    <EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator />
+
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="Företag"
+                              @bind-Value="model.Foretag"
+                              For="@(() => model.Foretag)"
+                              Variant="Variant.Outlined"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="Jobbtitel"
+                              @bind-Value="model.Jobbtitel"
+                              For="@(() => model.Jobbtitel)"
+                              Variant="Variant.Outlined"
+                              Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="Plats"
+                              @bind-Value="model.Plats"
+                              For="@(() => model.Plats)"
+                              Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudDatePicker Label="Ansökningsdatum"
+                               @bind-Date="ansokanDatum"
+                               Variant="Variant.Outlined"
+                               Required="true" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudSelect T="ApplicationStatus"
+                           Label="Status"
+                           @bind-Value="model.Status"
+                           For="@(() => model.Status)"
+                           Variant="Variant.Outlined"
+                           Required="true">
+                    <MudSelectItem Value="@(ApplicationStatus.VantarPaSvar)">Väntar på svar</MudSelectItem>
+                    <MudSelectItem Value="@(ApplicationStatus.Ja)">Ja</MudSelectItem>
+                    <MudSelectItem Value="@(ApplicationStatus.Nej)">Nej</MudSelectItem>
+                    <MudSelectItem Value="@(ApplicationStatus.GattVideare)">Gått vidare</MudSelectItem>
+                    <MudSelectItem Value="@(ApplicationStatus.Intervju)">Intervju</MudSelectItem>
+                    <MudSelectItem Value="@(ApplicationStatus.Avbruten)">Avbruten</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField Label="URL till annons"
+                              @bind-Value="model.Url"
+                              For="@(() => model.Url)"
+                              Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField Label="Anteckningar"
+                              @bind-Value="model.Anteckningar"
+                              For="@(() => model.Anteckningar)"
+                              Variant="Variant.Outlined"
+                              Lines="5" />
+            </MudItem>
+
+            <MudItem xs="12" Class="d-flex gap-2">
+                <MudButton ButtonType="ButtonType.Submit"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save">
+                    Spara
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Default"
+                           Href="/jobapplications"
+                           StartIcon="@Icons.Material.Filled.Cancel">
+                    Avbryt
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+</MudPaper>
+
+@code {
+    private JobApplication model = new JobApplication
+        {
+            AnsokanDatum = DateTime.Today,
+            Status = ApplicationStatus.VantarPaSvar
+        };
+
+    private DateTime? ansokanDatum = DateTime.Today;
+
+    private async Task OnValidSubmit()
+    {
+        if (ansokanDatum.HasValue)
+        {
+            model.AnsokanDatum = ansokanDatum.Value;
+        }
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                model.UserId = appUser.Id;
+
+                DbContext.JobApplications.Add(model);
+                await DbContext.SaveChangesAsync();
+
+                Snackbar.Add("Jobbansökan skapad!", Severity.Success);
+                NavigationManager.NavigateTo("/jobapplications");
+            }
+        }
+    }
+}

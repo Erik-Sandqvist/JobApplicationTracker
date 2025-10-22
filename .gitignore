@@ -1,0 +1,18 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Others
+*.log
+*.db
+.vscode/
+
+# Blazor/ASP.NET artifacts
+wwwroot/dist/
+node_modules/
+*.publish.xml
