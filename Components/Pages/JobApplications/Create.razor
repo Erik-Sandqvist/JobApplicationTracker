@@ -14,22 +14,22 @@
 <MudText Typo="Typo.h3" Class="mb-4">Lägg till ny jobbansökan</MudText>
 
 <MudPaper Class="pa-4">
-    <EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+    <EditForm Model="@model" OnValidSubmit="OnValidSubmit" FormName="CreateJobApplicationForm">
+
         <DataAnnotationsValidator />
 
         <MudGrid>
             <MudItem xs="12" sm="6">
                 <MudTextField Label="Företag"
                               @bind-Value="model.Foretag"
-                              For="@(() => model.Foretag)"
                               Variant="Variant.Outlined"
                               Required="true" />
+
             </MudItem>
 
             <MudItem xs="12" sm="6">
                 <MudTextField Label="Jobbtitel"
                               @bind-Value="model.Jobbtitel"
-                              For="@(() => model.Jobbtitel)"
                               Variant="Variant.Outlined"
                               Required="true" />
             </MudItem>
