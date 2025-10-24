@@ -1,4 +1,5 @@
 ﻿@namespace JobApplicationTrackerV2.Components.Shared
+@using MudBlazor
 
 <MudDialog>
     <DialogContent>
@@ -12,7 +13,7 @@
 
 @code {
     [CascadingParameter]
-    MudBlazor.IDialogReference MudDialog { get; set; } = null!;
+    public IDialogReference MudDialog { get; set; } = null!;
 
     [Parameter]
     public string ContentText { get; set; } = string.Empty;

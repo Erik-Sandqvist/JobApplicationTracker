@@ -1,4 +1,5 @@
 ﻿@page "/jobapplications/create"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using JobApplicationTrackerV2.Data
 @using JobApplicationTrackerV2.Models
@@ -14,22 +15,23 @@
 <MudText Typo="Typo.h3" Class="mb-4">Lägg till ny jobbansökan</MudText>
 
 <MudPaper Class="pa-4">
-    <EditForm Model="@model" OnValidSubmit="OnValidSubmit" FormName="CreateJobApplicationForm">
-
+    <EditForm Model="@model" OnValidSubmit="OnValidSubmit">
         <DataAnnotationsValidator />
+        <ValidationSummary />
 
         <MudGrid>
             <MudItem xs="12" sm="6">
                 <MudTextField Label="Företag"
                               @bind-Value="model.Foretag"
+                              For="@(() => model.Foretag)"
                               Variant="Variant.Outlined"
                               Required="true" />
-
             </MudItem>
 
             <MudItem xs="12" sm="6">
                 <MudTextField Label="Jobbtitel"
                               @bind-Value="model.Jobbtitel"
+                              For="@(() => model.Jobbtitel)"
                               Variant="Variant.Outlined"
                               Required="true" />
             </MudItem>
@@ -98,21 +100,14 @@
 </MudPaper>
 
 @code {
-    private JobApplication model = new JobApplication
-        {
-            AnsokanDatum = DateTime.Today,
-            Status = ApplicationStatus.VantarPaSvar
-        };
-
+    private JobApplication model = new JobApplication();
     private DateTime? ansokanDatum = DateTime.Today;
 
-    private async Task OnValidSubmit()
+    protected override async Task OnInitializedAsync()
     {
-        if (ansokanDatum.HasValue)
-        {
-            model.AnsokanDatum = ansokanDatum.Value;
-        }
-
+        model.Status = ApplicationStatus.VantarPaSvar;
+        
+        // Sätt UserId direkt när komponenten laddas
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -122,13 +117,28 @@
             if (appUser != null)
             {
                 model.UserId = appUser.Id;
-
-                DbContext.JobApplications.Add(model);
-                await DbContext.SaveChangesAsync();
-
-                Snackbar.Add("Jobbansökan skapad!", Severity.Success);
-                NavigationManager.NavigateTo("/jobapplications");
             }
+        }
+    }
+
+    private async Task OnValidSubmit()
+    {
+        try
+        {
+            if (ansokanDatum.HasValue)
+            {
+                model.AnsokanDatum = ansokanDatum.Value;
+            }
+
+            DbContext.JobApplications.Add(model);
+            await DbContext.SaveChangesAsync();
+
+            Snackbar.Add("Jobbansökan skapad!", Severity.Success);
+            NavigationManager.NavigateTo("/jobapplications");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
         }
     }
 }

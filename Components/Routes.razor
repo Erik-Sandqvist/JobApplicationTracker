@@ -1,12 +1,20 @@
 ﻿@using JobApplicationTrackerV2.Components.Account.Shared
+@using JobApplicationTrackerV2.Components.Layout
 
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)">
+            <Authorizing>
+                <p>Laddar...</p>
+            </Authorizing>
             <NotAuthorized>
                 @if (context.User.Identity?.IsAuthenticated != true)
                 {
                     <RedirectToLogin />
+                }
+                else
+                {
+                    <p>Du har inte behörighet att se denna sida.</p>
                 }
             </NotAuthorized>
         </AuthorizeRouteView>

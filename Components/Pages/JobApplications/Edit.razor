@@ -1,0 +1,167 @@
+@page "/jobapplications/edit/{id:int}"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using JobApplicationTrackerV2.Data
+@using JobApplicationTrackerV2.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@inject ApplicationDbContext DbContext
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+@if (model == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudText Typo="Typo.h3" Class="mb-4">Redigera jobbansökan</MudText>
+
+    <MudPaper Class="pa-4">
+        <EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Företag"
+                                  @bind-Value="model.Foretag"
+                                  For="@(() => model.Foretag)"
+                                  Variant="Variant.Outlined"
+                                  Required="true" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Jobbtitel"
+                                  @bind-Value="model.Jobbtitel"
+                                  For="@(() => model.Jobbtitel)"
+                                  Variant="Variant.Outlined"
+                                  Required="true" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Plats"
+                                  @bind-Value="model.Plats"
+                                  For="@(() => model.Plats)"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Ansökningsdatum"
+                                   @bind-Date="ansokanDatum"
+                                   Variant="Variant.Outlined"
+                                   Required="true" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="ApplicationStatus"
+                               Label="Status"
+                               @bind-Value="model.Status"
+                               For="@(() => model.Status)"
+                               Variant="Variant.Outlined"
+                               Required="true">
+                        <MudSelectItem Value="@(ApplicationStatus.VantarPaSvar)">Väntar på svar</MudSelectItem>
+                        <MudSelectItem Value="@(ApplicationStatus.Ja)">Ja</MudSelectItem>
+                        <MudSelectItem Value="@(ApplicationStatus.Nej)">Nej</MudSelectItem>
+                        <MudSelectItem Value="@(ApplicationStatus.GattVideare)">Gått vidare</MudSelectItem>
+                        <MudSelectItem Value="@(ApplicationStatus.Intervju)">Intervju</MudSelectItem>
+                        <MudSelectItem Value="@(ApplicationStatus.Avbruten)">Avbruten</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="URL till annons"
+                                  @bind-Value="model.Url"
+                                  For="@(() => model.Url)"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField Label="Anteckningar"
+                                  @bind-Value="model.Anteckningar"
+                                  For="@(() => model.Anteckningar)"
+                                  Variant="Variant.Outlined"
+                                  Lines="5" />
+                </MudItem>
+
+                <MudItem xs="12" Class="d-flex gap-2">
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save">
+                        Uppdatera
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Default"
+                               Href="/jobapplications"
+                               StartIcon="@Icons.Material.Filled.Cancel">
+                        Avbryt
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudPaper>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private JobApplication? model;
+    private DateTime? ansokanDatum;
+    private string? userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            userId = appUser?.Id;
+
+            if (userId != null)
+            {
+                model = await DbContext.JobApplications
+                    .FirstOrDefaultAsync(j => j.Id == Id && j.UserId == userId);
+
+                if (model != null)
+                {
+                    ansokanDatum = model.AnsokanDatum;
+                }
+                else
+                {
+                    NavigationManager.NavigateTo("/jobapplications");
+                }
+            }
+        }
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (model != null)
+        {
+            try
+            {
+                if (ansokanDatum.HasValue)
+                {
+                    model.AnsokanDatum = ansokanDatum.Value;
+                }
+
+                DbContext.JobApplications.Update(model);
+                await DbContext.SaveChangesAsync();
+
+                Snackbar.Add("Jobbansökan uppdaterad!", Severity.Success);
+                NavigationManager.NavigateTo("/jobapplications");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}
