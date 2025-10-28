@@ -5,7 +5,7 @@
 @using JobApplicationTrackerV2.Models
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
@@ -126,7 +126,8 @@ else
 
             if (userId != null)
             {
-                model = await DbContext.JobApplications
+                using var context = await DbContextFactory.CreateDbContextAsync();
+                model = await context.JobApplications
                     .FirstOrDefaultAsync(j => j.Id == Id && j.UserId == userId);
 
                 if (model != null)
@@ -152,8 +153,9 @@ else
                     model.AnsokanDatum = ansokanDatum.Value;
                 }
 
-                DbContext.JobApplications.Update(model);
-                await DbContext.SaveChangesAsync();
+                using var context = await DbContextFactory.CreateDbContextAsync();
+                context.JobApplications.Update(model);
+                await context.SaveChangesAsync();
 
                 Snackbar.Add("Jobbansökan uppdaterad!", Severity.Success);
                 NavigationManager.NavigateTo("/jobapplications");

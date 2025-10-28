@@ -5,7 +5,7 @@
 @using JobApplicationTrackerV2.Models
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
@@ -130,8 +130,9 @@
                 model.AnsokanDatum = ansokanDatum.Value;
             }
 
-            DbContext.JobApplications.Add(model);
-            await DbContext.SaveChangesAsync();
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            context.JobApplications.Add(model);
+            await context.SaveChangesAsync();
 
             Snackbar.Add("Jobbansökan skapad!", Severity.Success);
             NavigationManager.NavigateTo("/jobapplications");

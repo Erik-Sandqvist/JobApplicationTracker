@@ -40,6 +40,28 @@ namespace Microsoft.AspNetCore.Routing
                 return TypedResults.Challenge(properties, [provider]);
             });
 
+            accountGroup.MapPost("/PerformLogin", async (
+                HttpContext context,
+                [FromServices] SignInManager<ApplicationUser> signInManager,
+                [FromServices] ILogger<Program> logger,
+                [FromForm] string email,
+                [FromForm] string password,
+                [FromForm] bool? rememberMe,
+                [FromForm] string? returnUrl) =>
+            {
+                var result = await signInManager.PasswordSignInAsync(email, password, rememberMe ?? false, lockoutOnFailure: false);
+
+                if (result.Succeeded)
+                {
+                    logger.LogInformation("User logged in.");
+                    return TypedResults.LocalRedirect(returnUrl ?? "/");
+                }
+                else
+                {
+                    return TypedResults.LocalRedirect($"/Account/Login?error=invalid&returnUrl={returnUrl}");
+                }
+            });
+
             accountGroup.MapPost("/Logout", async (
                 ClaimsPrincipal user,
                 SignInManager<ApplicationUser> signInManager,

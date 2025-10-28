@@ -19,27 +19,28 @@
     <div style="max-width: 400px; margin: 100px auto; padding: 20px;">
         <h2>Logga in</h2>
 
-        @if (!string.IsNullOrEmpty(errorMessage))
+        @if (!string.IsNullOrEmpty(ErrorMessage))
         {
-            <div style="color: red; margin-bottom: 10px;">@errorMessage</div>
+            <div style="color: red; margin-bottom: 10px;">@ErrorMessage</div>
         }
 
-        <form method="post" @onsubmit="LoginUser" @formname="login">
+        <form method="post" action="/Account/PerformLogin">
             <AntiforgeryToken />
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
 
             <div style="margin-bottom: 15px;">
                 <label>E-post:</label><br />
-                <input type="email" name="Input.Email" @bind="Input.Email" required style="width: 100%; padding: 8px;" />
+                <input type="email" name="email" required style="width: 100%; padding: 8px;" />
             </div>
 
             <div style="margin-bottom: 15px;">
                 <label>Lösenord:</label><br />
-                <input type="password" name="Input.Password" @bind="Input.Password" required style="width: 100%; padding: 8px;" />
+                <input type="password" name="password" required style="width: 100%; padding: 8px;" />
             </div>
 
             <div style="margin-bottom: 15px;">
                 <label>
-                    <input type="checkbox" name="Input.RememberMe" @bind="Input.RememberMe" />
+                    <input type="checkbox" name="rememberMe" value="true" />
                     Kom ihåg mig
                 </label>
             </div>
@@ -57,39 +58,11 @@
 </html>
 
 @code {
-    private string? errorMessage;
-
-    [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = new();
-
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    public async Task LoginUser()
-    {
-        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+    [SupplyParameterFromQuery(Name = "error")]
+    private string? Error { get; set; }
 
-        if (result.Succeeded)
-        {
-            Logger.LogInformation("User logged in.");
-            NavigationManager.NavigateTo(ReturnUrl ?? "/", true);
-        }
-        else
-        {
-            errorMessage = "Ogiltigt inloggningsförsök.";
-        }
-    }
-
-    private sealed class InputModel
-    {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = "";
-
-        [Required]
-        [DataType(DataType.Password)]
-        public string Password { get; set; } = "";
-
-        public bool RememberMe { get; set; }
-    }
+    private string? ErrorMessage => Error == "invalid" ? "Ogiltigt inloggningsförsök." : null;
 }
