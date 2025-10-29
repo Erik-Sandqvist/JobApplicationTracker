@@ -54,13 +54,17 @@ namespace Microsoft.AspNetCore.Routing
                 if (result.Succeeded)
                 {
                     logger.LogInformation("User logged in.");
-                    return TypedResults.LocalRedirect(returnUrl ?? "/");
+                    var redirectUrl = string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl;
+                    return TypedResults.LocalRedirect(redirectUrl);
                 }
                 else
                 {
-                    return TypedResults.LocalRedirect($"/Account/Login?error=invalid&returnUrl={returnUrl}");
+                    var errorRedirect = string.IsNullOrEmpty(returnUrl) 
+                        ? "/Account/Login?error=invalid" 
+                        : $"/Account/Login?error=invalid&returnUrl={returnUrl}";
+                    return TypedResults.LocalRedirect(errorRedirect);
                 }
-            });
+            }).DisableAntiforgery();
 
             accountGroup.MapPost("/Logout", async (
                 ClaimsPrincipal user,
@@ -68,7 +72,8 @@ namespace Microsoft.AspNetCore.Routing
                 [FromForm] string returnUrl) =>
             {
                 await signInManager.SignOutAsync();
-                return TypedResults.LocalRedirect($"~/{returnUrl}");
+                var redirectUrl = string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl;
+                return TypedResults.LocalRedirect($"~/{redirectUrl}");
             });
 
             var manageGroup = accountGroup.MapGroup("/Manage").RequireAuthorization();
