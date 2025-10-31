@@ -18,7 +18,6 @@
                 <MudButton Href="Account/Manage" Color="Color.Inherit">Konto</MudButton>
                 <form action="Account/Logout" method="post">
                     <AntiforgeryToken />
-                    <input type="hidden" name="ReturnUrl" value="@currentUrl" />
                     <MudButton ButtonType="ButtonType.Submit" Color="Color.Inherit">Logga ut</MudButton>
                 </form>
             </Authorized>
@@ -70,4 +69,4 @@
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
-}
+}}

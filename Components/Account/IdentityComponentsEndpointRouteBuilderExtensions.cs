@@ -67,14 +67,14 @@ namespace Microsoft.AspNetCore.Routing
             }).DisableAntiforgery();
 
             accountGroup.MapPost("/Logout", async (
-                ClaimsPrincipal user,
-                SignInManager<ApplicationUser> signInManager,
-                [FromForm] string returnUrl) =>
+             ClaimsPrincipal user,
+         SignInManager<ApplicationUser> signInManager,
+         [FromForm] string? returnUrl) =>
             {
-                await signInManager.SignOutAsync();
-                var redirectUrl = string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl;
-                return TypedResults.LocalRedirect($"~/{redirectUrl}");
-            });
+  await signInManager.SignOutAsync();
+                // Always redirect to home page after logout
+return TypedResults.LocalRedirect("~/");
+});
 
             var manageGroup = accountGroup.MapGroup("/Manage").RequireAuthorization();
 
