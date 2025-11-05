@@ -1,8 +1,11 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
+@inject ThemeService ThemeService
 @implements IDisposable
+@using JobApplicationTrackerV2.Themes
+@using JobApplicationTrackerV2.Services
 
-<MudThemeProvider />
+<MudThemeProvider Theme="@CustomTheme.DefaultTheme" @bind-IsDarkMode="@_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -12,34 +15,38 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
         <MudText Typo="Typo.h5" Class="ml-3">Job Application Tracker</MudText>
         <MudSpacer />
-        <AuthorizeView>
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
+ Color="Color.Inherit" 
+             OnClick="@ToggleDarkMode" 
+           Title="@(_isDarkMode ? "Ljust läge" : "Mörkt läge")" />
+     <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body1" Class="mr-4">Hej, @context.User.Identity?.Name</MudText>
-                <MudButton Href="Account/Manage" Color="Color.Inherit">Konto</MudButton>
-                <form action="Account/Logout" method="post">
-                    <AntiforgeryToken />
-                    <MudButton ButtonType="ButtonType.Submit" Color="Color.Inherit">Logga ut</MudButton>
-                </form>
-            </Authorized>
-            <NotAuthorized>
-                <MudButton Href="Account/Register" Color="Color.Inherit">Registrera</MudButton>
-                <MudButton Href="Account/Login" Color="Color.Inherit">Logga in</MudButton>
+      <MudText Typo="Typo.body1" Class="mr-4">Hej, @context.User.Identity?.Name</MudText>
+     <MudButton Href="Account/Manage" Color="Color.Inherit">Konto</MudButton>
+      <form action="Account/Logout" method="post">
+            <AntiforgeryToken />
+         <MudButton ButtonType="ButtonType.Submit" Color="Color.Inherit">Logga ut</MudButton>
+      </form>
+  </Authorized>
+          <NotAuthorized>
+   <MudButton Href="Account/Register" Color="Color.Inherit">Registrera</MudButton>
+          <MudButton Href="Account/Login" Color="Color.Inherit">Logga in</MudButton>
             </NotAuthorized>
         </AuthorizeView>
     </MudAppBar>
 
     <MudDrawer @bind-Open="drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
         <MudNavMenu>
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Hem</MudNavLink>
+  <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Hem</MudNavLink>
             <AuthorizeView>
-                <MudNavLink Href="/jobapplications" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Work">Mina Ansökningar</MudNavLink>
-            </AuthorizeView>
+       <MudNavLink Href="/jobapplications" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Work">Mina Ansökningar</MudNavLink>
+      </AuthorizeView>
         </MudNavMenu>
     </MudDrawer>
 
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
-            @Body
+         @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
@@ -47,16 +54,24 @@
 @code {
     private bool drawerOpen = true;
     private string? currentUrl;
+    private bool _isDarkMode;
 
     private void ToggleDrawer()
     {
         drawerOpen = !drawerOpen;
     }
 
+    private void ToggleDarkMode()
+    {
+        ThemeService.ToggleDarkMode();
+    }
+
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-        NavigationManager.LocationChanged += OnLocationChanged;
+   NavigationManager.LocationChanged += OnLocationChanged;
+        ThemeService.OnChange += OnThemeChanged;
+     _isDarkMode = ThemeService.IsDarkMode;
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -65,8 +80,15 @@
         StateHasChanged();
     }
 
+    private void OnThemeChanged()
+ {
+        _isDarkMode = ThemeService.IsDarkMode;
+        StateHasChanged();
+    }
+
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+        ThemeService.OnChange -= OnThemeChanged;
     }
-}}
+}

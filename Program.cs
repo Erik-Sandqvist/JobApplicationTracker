@@ -1,6 +1,7 @@
 using JobApplicationTrackerV2.Components.Account;
 using JobApplicationTrackerV2.Components;
 using JobApplicationTrackerV2.Data;
+using JobApplicationTrackerV2.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -70,6 +71,9 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 // Add MudBlazor
 builder.Services.AddMudServices();
+
+// Add ThemeService
+builder.Services.AddScoped<ThemeService>();
 
 var app = builder.Build();
 

@@ -8,7 +8,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
-@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @attribute [Authorize]
 
 <MudText Typo="Typo.h3" Class="mb-4">Mina Jobbansökningar</MudText>
@@ -122,7 +122,6 @@ else
 
     private async Task DeleteApplication(int id)
     {
-        // Hämta userId igen för säkerhets skull
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -135,31 +134,20 @@ else
         if (string.IsNullOrEmpty(currentUserId))
             return;
 
-        var parameters = new DialogParameters
-            {
-                ["ContentText"] = "Är du säker på att du vill ta bort denna ansökan?",
-                ["ButtonText"] = "Ta bort",
-                ["Color"] = Color.Error
-            };
-
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Bekräfta borttagning", parameters);
-        var result = await dialog.Result;
-
-        if (result != null && !result.Canceled)
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        var application = await context.JobApplications.FindAsync(id);
+        if (application != null && application.UserId == currentUserId)
         {
-            using var context = await DbContextFactory.CreateDbContextAsync();
-            var application = await context.JobApplications.FindAsync(id);
-            if (application != null && application.UserId == currentUserId)
-            {
-                context.JobApplications.Remove(application);
-                await context.SaveChangesAsync();
+            context.JobApplications.Remove(application);
+            await context.SaveChangesAsync();
 
-                // Uppdatera listan
-                applications = await context.JobApplications
-                    .Where(j => j.UserId == currentUserId)
-                    .OrderByDescending(j => j.AnsokanDatum)
-                    .ToListAsync();
-            }
+            Snackbar.Add("Ansökan borttagen!", Severity.Success);
+
+            // Uppdatera listan
+            applications = await context.JobApplications
+                .Where(j => j.UserId == currentUserId)
+                .OrderByDescending(j => j.AnsokanDatum)
+                .ToListAsync();
         }
     }
 }
