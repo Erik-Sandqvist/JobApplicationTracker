@@ -1,8 +1,25 @@
 ﻿@page "/"
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudContainer Class="d-flex justify-center align-center flex-column" Style="min-height: 20vh; margin-top: 2vw;">
+    <MudText Typo="Typo.h1" Align="Align.Center" Color="Color.Primary">Job Application Tracker</MudText>
+    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Primary" Style="font-size: 2vw">By Erik Sandqvist</MudText>
+    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Primary" Style="font-size: 2vw">Du är inloggad som: @userName</MudText>
+</MudContainer>
 
-Welcome to your new app.
-1234
+@code {
+    private string userName = "Gäst";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            userName = user.Identity.Name ?? "Okänd användare";
+        }
+    }
+}

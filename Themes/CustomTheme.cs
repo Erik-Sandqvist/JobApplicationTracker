@@ -14,7 +14,7 @@ namespace JobApplicationTrackerV2.Themes
                 Tertiary = "#FF9800",       // Orange
          
                 // Bakgrundsfärger
-                Background = "#FFFFFF",      // Vit bakgrund
+                Background = "#8cbdb0",      // Vit bakgrund
                 BackgroundGray = "#F5F5F5",  // Ljusgrå bakgrund
                 Surface = "#FFFFFF",         // Ytor (kort, dialoger)
                 DrawerBackground = "#FFFFFF", // Drawer bakgrund
