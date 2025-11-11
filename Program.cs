@@ -39,20 +39,31 @@ builder.Services.AddAuthentication(options =>
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
+// ? Konfigurera Npgsql att använda UTC för alla DateTime-värden
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // ? FIX: Use ONLY DbContextFactory for Blazor Server
 // This is the recommended approach to avoid concurrency issues
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString, sqlOptions =>
-    {
-        sqlOptions.CommandTimeout(30);
+  options.UseNpgsql(connectionString, npgsqlOptions =>
+ {
+    npgsqlOptions.CommandTimeout(30);
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+   errorCodesToAdd: null);
     }));
 
 // ? Add pooled DbContext for Identity and other non-Blazor services
 // This is more efficient than creating a new context every time
 builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString, sqlOptions =>
-    {
-        sqlOptions.CommandTimeout(30);
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+  {
+        npgsqlOptions.CommandTimeout(30);
+ npgsqlOptions.EnableRetryOnFailure(
+maxRetryCount: 5,
+      maxRetryDelay: TimeSpan.FromSeconds(10),
+     errorCodesToAdd: null);
     }));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();

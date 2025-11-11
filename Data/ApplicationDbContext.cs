@@ -14,5 +14,17 @@ namespace JobApplicationTrackerV2.Data
 
         // Lägg till JobApplications-tabellen
         public DbSet<JobApplication> JobApplications { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            // Konfigurera relation mellan JobApplication och ApplicationUser
+            builder.Entity<JobApplication>()
+                .HasOne(j => j.User)
+                .WithMany()
+                .HasForeignKey(j => j.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 }

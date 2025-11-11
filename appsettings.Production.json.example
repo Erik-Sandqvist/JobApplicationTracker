@@ -1,7 +1,7 @@
 {
-  // DENNA FIL ÄR ETT EXEMPEL - COMMITA ALDRIG MED RIKTIGA VÄRDEN!
-  // Kopiera denna fil till appsettings.Production.json och uppdatera med dina värden
-  // appsettings.Production.json är exkluderad från Git via .gitignore
+  // DENNA FIL ï¿½R ETT EXEMPEL - COMMITA ALDRIG MED RIKTIGA Vï¿½RDEN!
+  // Kopiera denna fil till appsettings.Production.json och uppdatera med dina vï¿½rden
+  // appsettings.Production.json ï¿½r exkluderad frï¿½n Git via .gitignore
   
   "ConnectionStrings": {
     // Azure SQL Database exempel:

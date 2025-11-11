@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using JobApplicationTrackerV2.Data;
 
 namespace JobApplicationTrackerV2.Models
 {
@@ -29,7 +30,8 @@ namespace JobApplicationTrackerV2.Models
 
         [Required]
         [DataType(DataType.Date)]
-        public DateTime AnsokanDatum { get; set; } = DateTime.Today;
+        // ✅ FIX: Använd DateTime.UtcNow för PostgreSQL-kompatibilitet
+        public DateTime AnsokanDatum { get; set; } = DateTime.UtcNow;
 
         [Required]
         public ApplicationStatus Status { get; set; } = ApplicationStatus.VantarPaSvar;
@@ -44,5 +46,8 @@ namespace JobApplicationTrackerV2.Models
         // Koppla till användare
         [Required]
         public string UserId { get; set; } = string.Empty;
+
+        // Navigation property för Entity Framework
+        public ApplicationUser? User { get; set; }
     }
 }

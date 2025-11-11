@@ -10,6 +10,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@inject ILogger<Create> Logger
 @attribute [Authorize]
 
 <MudText Typo="Typo.h3" Class="mb-4">Lägg till ny jobbansökan</MudText>
@@ -117,7 +118,16 @@
             if (appUser != null)
             {
                 model.UserId = appUser.Id;
+                Logger.LogInformation("UserId set to: {UserId}", model.UserId);
             }
+            else
+            {
+                Logger.LogWarning("Could not get ApplicationUser from UserManager");
+            }
+        }
+        else
+        {
+            Logger.LogWarning("User is not authenticated");
         }
     }
 
@@ -125,21 +135,63 @@
     {
         try
         {
-            if (ansokanDatum.HasValue)
+            // Validera att UserId är satt
+            if (string.IsNullOrEmpty(model.UserId))
             {
-                model.AnsokanDatum = ansokanDatum.Value;
+                Snackbar.Add("Fel: Ingen användare är inloggad!", Severity.Error);
+                Logger.LogError("Attempted to save JobApplication without UserId");
+                return;
             }
 
+            if (ansokanDatum.HasValue)
+            {
+                // ✅ FIX: Konvertera till UTC för PostgreSQL
+                model.AnsokanDatum = DateTime.SpecifyKind(ansokanDatum.Value, DateTimeKind.Utc);
+            }
+            else
+            {
+                // Fallback till dagens datum i UTC
+                model.AnsokanDatum = DateTime.UtcNow;
+            }
+
+            Logger.LogInformation("Attempting to save JobApplication: {@JobApplication}", new 
+            { 
+                model.Foretag, 
+                model.Jobbtitel, 
+                model.UserId,
+                AnsokanDatum = model.AnsokanDatum.ToString("o"), // ISO 8601 format
+                model.Status 
+            });
+
             using var context = await DbContextFactory.CreateDbContextAsync();
+            
+            // Verifiera att användaren finns
+            var userExists = await context.Users.AnyAsync(u => u.Id == model.UserId);
+            if (!userExists)
+            {
+                Snackbar.Add($"Fel: Användare med ID {model.UserId} finns inte!", Severity.Error);
+                Logger.LogError("User with ID {UserId} does not exist", model.UserId);
+                return;
+            }
+
             context.JobApplications.Add(model);
             await context.SaveChangesAsync();
 
+            Logger.LogInformation("JobApplication saved successfully with UTC date: {Date}", model.AnsokanDatum);
             Snackbar.Add("Jobbansökan skapad!", Severity.Success);
             NavigationManager.NavigateTo("/jobapplications");
         }
+        catch (DbUpdateException dbEx)
+        {
+            var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+            Logger.LogError(dbEx, "Database error while saving JobApplication: {InnerMessage}", innerMessage);
+            Snackbar.Add($"Databasfel: {innerMessage}", Severity.Error);
+        }
         catch (Exception ex)
         {
-            Snackbar.Add($"Fel: {ex.Message}", Severity.Error);
+            var innerMessage = ex.InnerException?.Message ?? ex.Message;
+            Logger.LogError(ex, "Error while saving JobApplication: {InnerMessage}", innerMessage);
+            Snackbar.Add($"Fel: {innerMessage}", Severity.Error);
         }
     }
 }

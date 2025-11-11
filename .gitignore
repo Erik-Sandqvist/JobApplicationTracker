@@ -22,13 +22,15 @@ appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
 
-# User Secrets
+# User Secrets (viktigt för Supabase!)
 secrets.json
+**/secrets.json
 
 # Environment files
 .env
 .env.local
 .env.production
+.env.development.local
 
 # Database files - SQL Server
 *.mdf
@@ -36,7 +38,7 @@ secrets.json
 *.bak
 App_Data/
 
-# Database files - SQLite (exkludera produktionsdatabaser)
+# Database files - SQLite (behålls för referens)
 *.db
 *.db-shm
 *.db-wal
@@ -45,5 +47,10 @@ App_Data/
 # Azure/Deployment
 *.pubxml
 *.azurePubxml
+
+# Supabase/PostgreSQL dumps
+*.dump
+*.backup
+*.sql
 
 
