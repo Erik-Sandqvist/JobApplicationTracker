@@ -9,12 +9,41 @@
 
 # Others
 *.log
-*.db
 .vscode/
 
 # Blazor/ASP.NET artifacts
 wwwroot/dist/
 node_modules/
 *.publish.xml
+
+# Säkerhet - Inkludera ALDRIG dessa filer
+appsettings.Production.json
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+
+# User Secrets
+secrets.json
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Database files - SQL Server
+*.mdf
+*.ldf
+*.bak
+App_Data/
+
+# Database files - SQLite (exkludera produktionsdatabaser)
+*.db
+*.db-shm
+*.db-wal
+!sample.db
+
+# Azure/Deployment
+*.pubxml
+*.azurePubxml
 
 

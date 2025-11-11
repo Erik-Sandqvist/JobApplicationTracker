@@ -39,25 +39,20 @@ builder.Services.AddAuthentication(options =>
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// Use DbContextFactory for Blazor Server to avoid concurrency issues
-// Added EnableRetryOnFailure for transient error handling
+// ? FIX: Use ONLY DbContextFactory for Blazor Server
+// This is the recommended approach to avoid concurrency issues
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
+    options.UseSqlite(connectionString, sqlOptions =>
     {
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null);
+        sqlOptions.CommandTimeout(30);
     }));
 
-// Still add DbContext for non-Blazor components (like Identity)
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
+// ? Add pooled DbContext for Identity and other non-Blazor services
+// This is more efficient than creating a new context every time
+builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
+    options.UseSqlite(connectionString, sqlOptions =>
     {
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null);
+        sqlOptions.CommandTimeout(30);
     }));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -77,22 +72,23 @@ builder.Services.AddScoped<ThemeService>();
 
 var app = builder.Build();
 
-// Automatically apply migrations in development with error handling
+// ? Automatically apply migrations in development with PROPER scoping
 if (app.Environment.IsDevelopment())
 {
     try
     {
-        using (var scope = app.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            db.Database.Migrate();
-        }
+        using var scope = app.Services.CreateScope();
+  var services = scope.ServiceProvider;
+     
+        // Get DbContext from the scoped service provider
+var context = services.GetRequiredService<ApplicationDbContext>();
+      context.Database.Migrate();
     }
     catch (Exception ex)
     {
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+     var logger = app.Services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating the database. Ensure SQL Server is running and accessible.");
-        // Continue running the app - migrations can be applied manually
+     // Continue running the app - migrations can be applied manually
     }
 }
 
