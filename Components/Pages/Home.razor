@@ -1,19 +1,49 @@
 ﻿@page "/"
+@using Microsoft.EntityFrameworkCore
+@using JobApplicationTrackerV2.Data
+@using JobApplicationTrackerV2.Models
+@using Microsoft.AspNetCore.Identity
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>Home</PageTitle>
 
 <MudContainer Class="d-flex justify-center align-center flex-column" Style="min-height: 20vh; margin-top: 2vw;">
     <MudText Typo="Typo.h1" Align="Align.Center" Color="Color.Primary">Job Application Tracker</MudText>
-    <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Primary" Style="font-size: 2vw">By Erik Sandqvist</MudText>
     <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Primary" Style="font-size: 2vw">Du är inloggad som: @userName</MudText>
     <br />
     <MudText Typo="Typo.h5" Align="Align.Center" Color="Color.Secondary" Style="font-size: 1.5vw">Tips till dig som söker jobb: Var Bäst </MudText>
        
 </MudContainer>
 
+@if (totalApplications > 0)
+{
+    <MudChart ChartType="ChartType.Pie" InputData="@data" @bind-SelectedIndex="Index" InputLabels="@labels" Width="300px" Height="300px" Style="margin: 0 auto; margin-top: 2vw" />
+    
+    <MudPaper Class="pa-4 mt-2 d-flex justify-center flex-column align-center">
+        <MudText Typo="Typo.h6">Totalt antal ansökningar: @totalApplications</MudText>
+        @if (Index >= 0 && Index < labels.Length)
+        {
+            <MudText Typo="Typo.body1" Class="mt-2">Vald kategori: <strong>@labels[Index]</strong> (@data[Index] st)</MudText>
+        }
+    </MudPaper>
+}
+else
+{
+    <MudPaper Class="pa-4 mt-4 d-flex justify-center">
+        <MudAlert Severity="Severity.Info">
+            Du har inga jobbansökningar än. Börja spåra dina ansökningar för att se statistik här!
+        </MudAlert>
+    </MudPaper>
+}
+
 @code {
     private string userName = "Gäst";
+    private int Index = -1;
+    private double[] data = Array.Empty<double>();
+    private string[] labels = Array.Empty<string>();
+    private int totalApplications = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -23,6 +53,58 @@
         if (user.Identity?.IsAuthenticated == true)
         {
             userName = user.Identity.Name ?? "Okänd användare";
+            
+            var appUser = await UserManager.GetUserAsync(user);
+            var userId = appUser?.Id;
+
+            if (userId != null)
+            {
+                await LoadApplicationStatistics(userId);
+            }
         }
+    }
+
+    private async Task LoadApplicationStatistics(string userId)
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        
+        var applications = await context.JobApplications
+            .Where(j => j.UserId == userId)
+            .ToListAsync();
+
+        totalApplications = applications.Count;
+
+        if (totalApplications > 0)
+        {
+            // Gruppera ansökningar per status och räkna antal
+            var statusGroups = applications
+                .GroupBy(j => j.Status)
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Count = g.Count(),
+                    Label = GetStatusLabel(g.Key)
+                })
+                .OrderByDescending(x => x.Count)
+                .ToList();
+
+            // Skapa data och labels för pie-charten
+            data = statusGroups.Select(x => (double)x.Count).ToArray();
+            labels = statusGroups.Select(x => x.Label).ToArray();
+        }
+    }
+
+    private string GetStatusLabel(ApplicationStatus status)
+    {
+        return status switch
+        {
+            ApplicationStatus.VantarPaSvar => "Väntar på svar",
+            ApplicationStatus.Ja => "Ja",
+            ApplicationStatus.Nej => "Nej",
+            ApplicationStatus.GattVideare => "Gått vidare",
+            ApplicationStatus.Intervju => "Intervju",
+            ApplicationStatus.Avbruten => "Avbruten",
+            _ => status.ToString()
+        };
     }
 }
